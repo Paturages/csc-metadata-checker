@@ -24,7 +24,7 @@ If you're on Linux/macOS, you might be more familiar with command line: `node in
 
 `compile.bat` does exactly what `npm run build` does. Just an easy double click for myself.
 
-[See here for icon personalization](https://github.com/nwjs/nw.js/wiki/Icons#windows).
+[See here for icon and executable metadata personalization](https://github.com/nwjs/nw.js/wiki/Icons#windows), but you'll most likely have to [go through some hoops](https://github.com/zeit/pkg/issues/91) to get a working executable. I personally resource-edited my copy of the .pkg-cache executable at `C:\Users\Paturages\.pkg-cache\v2.5\fetched-v10.4.1-win-x64`. I guess it could be automated but I won't bother at the moment.
 
 ## Suggestions, bugs and ideas
 

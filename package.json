@@ -12,5 +12,8 @@
     "glob": "^7.1.3",
     "iconv-lite": "^0.4.24",
     "midifile": "^2.0.0"
+  },
+  "devDependencies": {
+    "pkg": "^4.3.7"
   }
 }
