@@ -28,4 +28,4 @@ If you're on Linux/macOS, you might be more familiar with command line: `node in
 
 ## Suggestions, bugs and ideas
 
-[Feel free to share and submit an issue!](issues)
+[Feel free to share and submit an issue!](https://github.com/Paturages/csc-metadata-checker/issues)
