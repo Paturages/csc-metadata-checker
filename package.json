@@ -7,7 +7,7 @@
     "build": "pkg index.js --targets=node10-win-x64 -o dist/build.exe"
   },
   "author": "Paturages",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "dependencies": {
     "glob": "^7.1.3",
     "iconv-lite": "^0.4.24",
