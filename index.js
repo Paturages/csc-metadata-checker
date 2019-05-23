@@ -1,112 +1,118 @@
-const getMetaFromChart = require('./scanners/chart');
-const getMetaFromMidi = require('./scanners/midi');
-const getMetaFromIni = require('./scanners/ini');
+const getMetaFromChart = require("./scanners/chart");
+const getMetaFromMidi = require("./scanners/midi");
+const getMetaFromIni = require("./scanners/ini");
 
-const package = require("./package.json");
-const fs = require('fs');
-const util = require('util');
-const Glob = require('glob');
-const path = require('path');
-const readline = require('readline');
+const app = require("./package.json");
+const { render: renderConsole } = require("./utils/console");
+const { render: renderHtml } = require("./utils/html");
+const { ls, stat, read, write } = require("./utils/fs");
+const { prompt, cleanPrompt } = require("./utils/prompt");
+const formatTime = require("./utils/format-time");
+const sox = require("./utils/sox");
+const html = require("./html/base.html");
+const path = require("path");
+
 const yellow = txt => `\x1b[33m${txt}\x1b[0m`;
 const red = txt => `\x1b[31m${txt}\x1b[0m`;
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-const prompt = message => new Promise((resolve, reject) =>
-  rl.question(message, answer => resolve(answer))
-);
-
-const ls = (folder, pattern) => new Promise((resolve, reject) =>
-  Glob(pattern, {
-    absolute: true,
-    realpath: true,
-    cwd: folder
-  }, (err, res) => err ? reject(err) : resolve(res))
-);
-const stat = path => util.promisify(fs.stat)(path);
-
-const read = util.promisify(fs.readFile);
-
-const ORIGIN = process.argv[2] || __dirname;
-
-const formatTime = time => {
-  const ms = time % 1;
-  time = time >> 0;
-  const seconds = time % 60;
-  time = time / 60 >> 0;
-  const minutes = time % 60;
-  time = time / 60 >> 0;
-  return [
-    time,
-    minutes ? `0${minutes}`.slice(-2) : "00",
-    seconds ? `0${seconds}`.slice(-2) : "00",
-  ].filter(x => x).join(':') + ms.toFixed(3).slice(1);
-}
+const ORIGIN = process.argv[2] ? path.resolve(process.argv[2]) : __dirname;
+const songs = [];
 
 const crawl = async root => {
   const files = await ls(root, "*");
-  const meta = {};
+  const meta = { info: "" };
+  const info = txt => {
+    console.log(txt);
+    meta.info += txt;
+    meta.info += "<br />";
+  }
   for (let file of files) {
     const stats = await stat(file);
     if (stats.isDirectory()) {
       await crawl(file);
     } else if (file.match(/\.mid$/)) {
+      if (!file.match(/\/notes\.mid$/)) {
+        info(`[${red("FOUND")}] "${file}" needs to be renamed to "notes.mid" (case-sensitive)`);
+      }
       const buffer = await read(file, { encoding: null });
       try {
         meta.chart = getMetaFromMidi(buffer);
-        meta.chart.brokenNotes && meta.chart.brokenNotes.forEach(note => {
-          note.time = formatTime(note.time / 1000);
-        });
       } catch (e) {
-        console.log(`[${yellow("WARN")}] This .mid file could not be scanned, but it might work anyway`)
-        console.log(`[${yellow("WARN")}] ${e.message}`);
+        info(`[${yellow("WARN")}] This .mid file could not be scanned, but it might work anyway`);
+        info(`[${yellow("WARN")}] ${e.message}`);
       }
     } else if (file.match(/\.chart$/)) {
+      if (!file.match(/\/notes\.chart$/)) {
+        info(`[${red("FOUND")}] "${file}" needs to be renamed to "notes.chart" (case-sensitive)`);
+      }
       const buffer = await read(file, { encoding: null });
       meta.chart = getMetaFromChart(buffer);
-      meta.chart.brokenNotes && meta.chart.brokenNotes.forEach(note => {
-        note.time = formatTime(note.time);
-      });
-    } else if (file.match(/song\.ini$/)) {
+    } else if (file.match(/\/song\.ini$/)) {
       const buffer = await read(file, { encoding: null });
       meta.ini = getMetaFromIni(buffer);
-      console.log(`${meta.ini.artist || red("artist MISSING")} - ${meta.ini.name || red("name MISSING")} [${meta.ini.charter || meta.ini.frets || red("charter MISSING")}]
-${meta.ini.genre || red("genre MISSING")} | ${meta.ini.album || red("album MISSING")} (${meta.ini.year || red("year MISSING")}; track ${meta.ini.album_track || meta.ini.track || red("MISSING")})
-${[
-  "icon",
-  "preview_start_time",
-  "diff_guitar"
-].map(x =>
-  meta.ini[x] && meta.ini[x] != 0 ?
-    `${x} = ${meta.ini[x]}` :
-    red(`${x} MISSING`)
-  ).join(" | ")}
-loading_phrase = ${meta.ini.loading_phrase || red("MISSING")}`);
+    } else if (file.match(/\.(mp3|ogg)$/)) {
+      if (!file.match(/\/(guitar|bass|rhythm|drums_?.|vocals|keys|song)\.(ogg|mp3)$/i)) {
+        info(`[${red("FOUND")}] "${file}" probably doesn't belong in a CH song folder`);
+      }
+      meta.audio = await sox.info(file);
+      meta.spectrogram = await sox.spectrogram(file);
+    } else if (!file.match(/\.(png|jpg)/)) {
+      // TODO: Check album art (#4)
+      info(`[${red("FOUND")}] "${file}" probably doesn't belong in a CH song folder`);
     }
   }
   if (!meta.chart || !meta.ini) return;
-  if (+meta.ini.delay) console.log(`[${red("FOUND")}] This chart includes delay in song.ini`);
+  // Log and check for missing/invalid fields
+  // s.log takes in a template for console.logging, with
+  // parameters that interface on the ./strings.js functions.
+  // The very first parameter is the meta itself, which the
+  // ./strings.js functions need.
+  // (you probably shouldn't do that in your own code, it's for my own usage lmao)
+  renderConsole`${meta}
+  ${"artist"} - ${"name"} [${"charter"}]
+  ${"genre"} | ${"album"} (${"year"}; track ${"track"})
+  ${"icon"} | preview_start_time = ${"preview"} | diff_guitar = ${"diff"}
+  audio = ${"audioFormat"} | length = ${"duration"} | bitrate = ${"bitrate"}
+  loading_phrase = ${"loading"}`;
+  // Same for the HTML
+  meta.info += renderHtml`${meta}
+  <div class="Song__title">${"artist"} - ${"name"}</div>
+  <div class="Song__charter">charted by <b>${"charter"}</b></div>
+  <div class="Song__meta">
+    genre = ${"genre"} | album = ${"album"} (${"year"}; track ${"track"})<br />
+    ${"icon"} | preview_start_time = ${"preview"} | diff_guitar = ${"diff"}<br />
+    audio = ${"audioFormat"} | length = ${"duration"} | bitrate = ${"bitrate"}<br />
+    loading_phrase = ${"loading"}
+  </div>`;
+
+  if (+meta.ini.delay)
+    info(`[${red("FOUND")}] This chart includes delay in song.ini`);
   if (meta.chart.brokenNotes && meta.chart.brokenNotes.length) {
-    console.log(`[${red("FOUND")}] Broken notes have been found!`);
+    info(`[${red("FOUND")}] Broken notes have been found!`);
+    for (let note of meta.chart.brokenNotes) {
+      note.time = formatTime(note.time);
+    }
     console.log(meta.chart.brokenNotes);
+    meta.info += JSON.stringify(meta.chart.brokenNotes);
   }
-  if (meta.ini.song_length && +meta.chart.chartMeta.length > +meta.ini.song_length / 1000) {
-    console.log(`[${red("FOUND")}] Either song_length is faulty, or there might be notes in the chart after the song!
-  song_length  = ${formatTime(meta.ini.song_length / 1000)}
-  vs.
-  chart_length = ${formatTime(meta.chart.chartMeta.length)}`);
+  if (+meta.chart.chartMeta.length > meta.audio.duration) {
+    info(`[${red("FOUND")}] Either song_length is faulty, or there might be notes in the chart after the song!`);
+    info(`  song_length  = ${formatTime(meta.audio.duration)}`);
+    info(`  vs.`);
+    info(`  chart_length = ${formatTime(meta.chart.chartMeta.length)}`);
   }
   console.log("---");
-}
+  songs.push(meta);
+};
 
 (async () => {
-  console.log(`CSC Metadata Checker - v${package.version}`);
+  console.log(`CSC Metadata Checker - v${app.version}`);
   console.log("---");
   await crawl(ORIGIN);
+  // Generate HTML
+  const htmlPath = path.resolve(__dirname, "output.html");
+  await write(htmlPath, html({ app, songs }));
+  console.log(`You can open file://${htmlPath} in a browser to browse the results with their spectrograms.`);
   await prompt("Press Enter to exit...");
-  rl.close();
+  cleanPrompt();
 })();

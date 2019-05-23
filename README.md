@@ -14,6 +14,14 @@ Look out for things that are in red: that usually means stuff has to be fixed.
 
 ## Development
 
+### Getting sox
+
+macOS: `brew install sox`, with most likely `lame` installed too
+Linux: `sudo apt-get install sox libsox-fmt-mp3` (probably? haven't tested)
+Windows: [Get a static build](https://sourceforge.net/projects/sox/files/sox/), as well as a DLL of `libmp3lame`. [This might work](https://www.videohelp.com/software?d=sox-14.4.0-libmad-libmp3lame.zip).
+
+### This repository
+
 Have Node.js installed (at least v10.x.x recommended). Clone the repo, `npm install` dependencies. If you're on Windows, drag and drop a folder on `run.bat`: it will call `index.js`. No fancy toolchain involved.
 
 If you're on Linux/macOS, you might be more familiar with command line: `node index /path/to/folder`. Also works on Windows, if you're a madman and use command line on Windows. I haven't tested drag and drop possibilities on these OSes.

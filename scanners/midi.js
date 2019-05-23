@@ -5,7 +5,6 @@
 
 const crypto = require('crypto');
 const MIDIFile = require('midifile');
-const fs = require('fs');
 const getMD5 = txt => {
   const hash = crypto.createHash('md5');
   hash.update(txt);
@@ -106,7 +105,10 @@ const parse = midiFile => {
           if (previous[diff]) {
             const distance = event.playTime - previous[diff].time;
             if (distance > 0 && distance < 5) {
-              brokenNotes.push({ time: previous[diff].time });
+              brokenNotes.push({
+                time: previous[diff].time,
+                part: `${tracks[event.track]}.${diff}`
+              });
             }
           }
           if (!previous[diff] || previous[diff].time != event.playTime) previous[diff] = { time: event.playTime };
