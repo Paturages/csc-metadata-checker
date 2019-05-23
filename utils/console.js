@@ -24,7 +24,7 @@ exports.diff = meta => {
 exports.loading = meta => meta.ini.loading_phrase || red("MISSING");
 exports.audioFormat = meta => {
   const { format } = meta.audio;
-  if (!format.match(/mp3|ogg/)) return red(`${format} (should be mp3 or ogg)`);
+  if (!format.match(/mp3|vorbis/)) return red(`${format} (should be mp3 or vorbis (ogg))`);
   return format;
 };
 exports.duration = meta => formatTime(meta.audio.duration);

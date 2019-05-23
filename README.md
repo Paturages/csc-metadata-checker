@@ -20,6 +20,8 @@ macOS: `brew install sox`, with most likely `lame` installed too
 Linux: `sudo apt-get install sox libsox-fmt-mp3` (probably? haven't tested)
 Windows: [Get a static build](https://sourceforge.net/projects/sox/files/sox/), as well as a DLL of `libmp3lame`. [This might work](https://www.videohelp.com/software?d=sox-14.4.0-libmad-libmp3lame.zip).
 
+`sox` will have to be bundled in a `sox` folder in the same directory as the executable.
+
 ### This repository
 
 Have Node.js installed (at least v10.x.x recommended). Clone the repo, `npm install` dependencies. If you're on Windows, drag and drop a folder on `run.bat`: it will call `index.js`. No fancy toolchain involved.

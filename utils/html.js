@@ -21,10 +21,14 @@ exports.diff = meta => {
   if (casted < -1 || casted > 6) return red(`${casted} (diffs should be between 0 and 6)`);
   return casted;
 };
-exports.loading = meta => meta.ini.loading_phrase || red("MISSING");
+exports.loading = meta => {
+  const txt = meta.ini.loading_phrase;
+  if (!txt) return red("MISSING");
+  return txt;
+};
 exports.audioFormat = meta => {
   const { format } = meta.audio;
-  if (!format.match(/mp3|ogg/)) return red(`${format} (should be mp3 or ogg)`);
+  if (!format.match(/mp3|vorbis/)) return red(`${format} (should be mp3 or vorbis (ogg))`);
   return format;
 };
 exports.duration = meta => formatTime(meta.audio.duration);

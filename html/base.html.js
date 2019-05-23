@@ -11,6 +11,28 @@ body {
 .Song__spectrogram img {
   max-height: 500px;
 }
+.Yellow {
+  color: #E65100;
+  font-size: 1.25em;
+}
+.Red {
+  color: #B71C1C;
+  font-size: 1.25em;
+}
+.Song {
+  margin: 2em 0;
+}
+.Song__title {
+  font-size: 1.5em;
+  font-weight: 500;
+}
+.Song__charter b {
+  font-weight: 500;
+}
+.Song__warnings {
+  margin: 1em 0;
+}
+
   </style>
 </head>
 <body contenteditable="true" spellcheck="true">
